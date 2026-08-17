@@ -22,14 +22,22 @@ echo "==> 检查端口 80 / 443"
 
 check_port_free() {
   local port="$1"
+  local out
   if command -v ss >/dev/null 2>&1; then
-    ss -tln | grep -qE "[:.]${port}[[:space:]]" && return 1 || return 0
+    out="$(ss -tlnp 2>/dev/null | grep -E "[:.]${port}[[:space:]]")" || return 0
   elif command -v netstat >/dev/null 2>&1; then
-    netstat -tln | grep -qE "[:.]${port}[[:space:]]" && return 1 || return 0
+    out="$(netstat -tlnp 2>/dev/null | grep -E "[:.]${port}[[:space:]]")" || return 0
   else
     echo "  警告：未找到 ss 或 netstat，跳过端口占用检查"
     return 0
   fi
+
+  # 由 docker 容器（docker-proxy）占用时放行：docker compose up 会重建容器并接管端口
+  if echo "$out" | grep -q "docker-proxy"; then
+    echo "  端口 $port 由 docker 容器占用（docker-proxy），将由 docker compose 接管，继续"
+    return 0
+  fi
+  return 1
 }
 
 for p in 80 443; do
@@ -37,6 +45,7 @@ for p in 80 443; do
     echo "  端口 $p 未被占用"
   else
     echo "错误：端口 $p 已被其他进程占用，请先释放后再运行"
+    echo "      提示：若该端口是本项目的 docker 容器占用，请用 root 运行本脚本（ss 需 root 才能识别进程）"
     exit 1
   fi
 done

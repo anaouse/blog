@@ -186,6 +186,17 @@ blog/
 
 SPA fallback（刷新不 404）由 nginx `try_files` 配置保证，部署后需在服务器验证 `/about` 直接访问。
 
+### 2026-08-17 第三步修正：deploy.sh 端口检查放行 docker 容器占用
+
+问题：服务器上旧版 nginx 容器（docker-proxy）占用 80 端口，deploy.sh 误判为"其他进程占用"而退出。
+
+修改 `scripts/deploy.sh` 的 `check_port_free`：
+- 占用进程为 docker-proxy（docker 容器）时放行，提示"将由 docker compose 接管"并继续
+- 其他进程占用时才报错退出
+- 报错提示补充：若端口由本项目 docker 容器占用，需以 root 运行脚本（ss 需 root 才能识别进程名）
+
+验证：`bash -n scripts/deploy.sh` 通过。服务器上需先 `git pull` 拿到新版 deploy.sh 再执行。
+
 ## MVP 验收与具体任务执行
 
 ### 写好基本的代码 
