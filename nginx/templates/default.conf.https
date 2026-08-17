@@ -1,0 +1,44 @@
+# 80：仅保留 acme-challenge 供续期验证，其余 301 到 https
+server {
+    listen 80;
+    server_name sleeponthegrass.com www.sleeponthegrass.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# 443：https
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name sleeponthegrass.com www.sleeponthegrass.com;
+
+    ssl_certificate /etc/letsencrypt/live/sleeponthegrass.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/sleeponthegrass.com/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # 前端静态资源
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # /api/* 反代到 backend
+    location /api/ {
+        proxy_pass http://backend:6713;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}

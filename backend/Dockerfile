@@ -6,7 +6,9 @@ WORKDIR /app
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /blog-backend .
+# cache mount 持久化 Go 编译缓存：未改动的依赖不重复编译
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -o /blog-backend .
 
 # ---- stage 2: run ----
 FROM alpine:3.20

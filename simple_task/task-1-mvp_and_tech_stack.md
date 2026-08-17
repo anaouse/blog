@@ -46,7 +46,7 @@ Nginx 部署编译好的前端
 - backend：Gin，提供 /api 接口
 - db：postgres:16，named volume（pgdata）持久化
 
-## 仓库结构
+## 仓库初代版本的结构
 
 blog/
 ├── frontend/              # vite + react + ts
@@ -66,7 +66,7 @@ blog/
 ├── .env.example
 └── .gitignore
 
-## 迭代流程（每次更新）
+## mvp 的迭代流程（每次更新）
 
 本地（Windows，只编译不运行）：
 1. 改代码
@@ -78,40 +78,6 @@ blog/
 2. git pull
 3. ./deploy.sh，即 docker compose up -d --build
 4. 浏览器验证
-
-## MVP 大概规划
-
-1. 服务器一次性准备
-   - 安装 docker + compose 插件
-   - 防火墙放行 80/443
-   - dig 确认 DNS 解析生效
-
-2. 仓库初始化：按上面的目录结构建好骨架，.gitignore 忽略 node_modules / dist / .env
-
-3. 前端 MVP
-   - vite 初始化 react-ts 项目，启用 react-compiler（免写 useCallback / useMemo）
-   - 两个页面：/（hello world）、/about
-   - 路由用 react-router-dom；Home 里调用后端 /api/hello 验证前后端打通
-
-4. 后端 MVP
-   - gin 最小服务：GET /api/hello 返回 JSON
-   - GET /api/health 检查 db 连接（验证 postgres 编排完整）
-
-5. nginx 配置
-   - 托管前端 dist，location / 用 try_files fallback 到 index.html（SPA 刷新不 404）
-   - 前端的 /api/ 发送到 nginx，反代到 backend:6713
-
-6. docker-compose 编排
-   - nginx / backend / db 三个服务
-   - db 不映射端口到宿主机，仅容器网络内可达
-   - pgdata named volume 持久化
-
-7. HTTPS（Let's Encrypt）
-   - certbot 容器 webroot 方式申请证书，证书写入 letsencrypt volume
-   - nginx 挂载证书，开启 443 + 80→443 重定向
-   - 配置自动续期（certbot renew + cron）
-
-8. deploy.sh：git pull + docker compose up -d --build
 
 ## 执行记录
 
@@ -197,6 +163,20 @@ SPA fallback（刷新不 404）由 nginx `try_files` 配置保证，部署后需
 
 验证：`bash -n scripts/deploy.sh` 通过。服务器上需先 `git pull` 拿到新版 deploy.sh 再执行。
 
+### 2026-08-17 第四步：后端编译过慢优化
+
+问题：服务器部署时 `go build` 耗时 170.6s，且每次部署（哪怕只改一行 Go 代码）都全量重编译。
+
+原因：
+- 首次要编译 gin 全部依赖（sonic、quic-go、validator 等），VPS CPU 核数少，纯 CPU 密集
+- Docker 每次构建环境全新，Go 编译缓存（GOCACHE）不持久化，导致每次部署都重编译所有依赖
+
+修改：
+- `backend/Dockerfile`：`go build` 加 `--mount=type=cache,target=/root/.cache/go-build`，用 BuildKit 缓存持久化 Go 编译缓存；之后只重编译改动的包，未改动依赖命中缓存（首次部署仍慢，之后秒级）
+- `.dockerignore`：加 `*.exe`，排除本地 `go build` 产物 backend.exe，减小构建上下文
+
+注意：cache mount 依赖 BuildKit（Docker 23+ 默认启用，`docker compose build` 即用），服务器 docker 版本应支持。
+
 ## MVP 验收与具体任务执行
 
 ### 写好基本的代码 
@@ -244,9 +224,26 @@ blog-nginx-1     blog-nginx           "/docker-entrypoint.…"   nginx     2 min
 
 然后前端新加入 /pages/About.tsx 让我访问 /about 的时候可以有简单的界面，而且刷新不会有异常，后端加入一个 /api/health 确保后端也能正常加入端口
 
-- [ ] https://sleeponthegrass.com/about 显示 about 页面
-- [ ] 直接访问 /about 刷新不 404（SPA fallback 生效）
-- [ ] http://sleeponthegrass.com 自动跳转 https
-- [ ] /api/hello 返回正常（前后端打通）
-- [ ] docker compose down 后重新 up，pgdata 数据仍在（volume 持久化验证）
-- [ ] 改一行代码重新部署后，数据库数据不丢
+成功修改前后端后，直接到服务器运行那个deploy就行 https://sleeponthegrass.com/about 显示 about 页面
+
+### 后端编译过慢
+
+```
+ => [backend build 1/6] FROM docker.io/library/golang:1.25-alpine@sha256:1e0126852075c9c60731c8ba49088448b91f63e2aed97ca9d1a9791622a05946                                             0.0s 
+ => => resolve docker.io/library/golang:1.25-alpine@sha256:1e0126852075c9c60731c8ba49088448b91f63e2aed97ca9d1a9791622a05946                                                           0.0s 
+ => [backend stage-1 1/3] FROM docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc                                                  0.0s 
+ => => resolve docker.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc                                                                  0.0s 
+ => [backend internal] load build context                                                                                                                                             0.0s 
+ => => transferring context: 555B                                                                                                                                                     0.0s 
+ => CACHED [backend build 2/6] WORKDIR /app                                                                                                                                           0.0s 
+ => CACHED [backend build 3/6] COPY backend/go.mod backend/go.sum ./                                                                                                                  0.0s 
+ => CACHED [backend build 4/6] RUN go mod download                                                                                                                                    0.0s 
+ => [backend build 5/6] COPY backend/ ./                                                                                                                                              0.0s 
+ => [backend build 6/6] RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -o /blog-backend .                                                                                          170.6s 
+ => [nginx frontend-build 5/6] COPY frontend/ ./                                                                                                                                      0.4s 
+ => [nginx frontend-build 6/6] RUN pnpm build                                                                                                                                        17.5s 
+```
+
+并行进行，这个后端最后才编译好，而且太慢了，我知道总时长肯定不会这么长，但是也要了30多秒，为什么？
+
+就是编译的时候比较久，现在加入使用外部实体机缓存，但是还没测试，之后测试了再来写，mvp 就此差不多构建完成

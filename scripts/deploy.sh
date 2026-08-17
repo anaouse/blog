@@ -71,7 +71,14 @@ fi
 echo "==> 准备 .env"
 if [ ! -f .env ]; then
   cp .env.example .env
-  echo "  已从 .env.example 创建 .env，请检查其中的 POSTGRES_PASSWORD"
+  echo "  已从 .env.example 创建 .env，请检查其中的 POSTGRES_PASSWORD 和 CERTBOT_EMAIL"
+fi
+
+echo "==> 检查 CERTBOT_EMAIL"
+if ! grep -q "^CERTBOT_EMAIL=." .env || grep -q "^CERTBOT_EMAIL=change_me@example.com" .env; then
+  echo "错误：.env 未配置 CERTBOT_EMAIL 或仍为占位符（Let's Encrypt 需要真实邮箱接收到期提醒）"
+  echo "      请在 .env 中修改：CERTBOT_EMAIL=your_email@example.com"
+  exit 1
 fi
 
 echo "==> 检查 git 仓库并拉取最新代码"

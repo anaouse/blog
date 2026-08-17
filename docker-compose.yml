@@ -5,8 +5,26 @@ services:
       dockerfile: nginx/Dockerfile
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      # 证书与 acme-challenge 存独立 volume，重建 nginx 镜像不影响证书
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot
     depends_on:
       - backend
+    restart: unless-stopped
+
+  certbot:
+    build:
+      context: .
+      dockerfile: certbot/Dockerfile
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    environment:
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+    depends_on:
+      - nginx
     restart: unless-stopped
 
   backend:
@@ -37,3 +55,5 @@ services:
 
 volumes:
   pgdata:
+  certbot-etc:
+  certbot-www:
