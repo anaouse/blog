@@ -170,6 +170,22 @@ blog/
 - `backend/Dockerfile`：`EXPOSE 8080` → `EXPOSE 6713`
 - 本文件执行记录同步更正
 
+### 2026-08-17 第三步：确认开发流程顺畅（about 页面 + /api/health）
+
+用户已删除前端 `index.css`，但 `main.tsx` 仍引用它会导致编译失败，本次一并修复。
+
+本次改动：
+- 前端：`pnpm add react-router-dom`（7.18.2）
+  - 新建 `src/pages/Home.tsx`：`/` 显示 hello world
+  - 新建 `src/pages/About.tsx`：`/about` 简单界面
+  - `src/App.tsx`：改为 BrowserRouter + Routes（`/` → Home，`/about` → About）
+  - `src/main.tsx`：移除对已删除的 `index.css` 的引用
+- 后端 `main.go`：新增 `GET /api/health` 返回 `{"status":"ok"}`（暂不查 db，postgres 还没涉及；MVP 规划中 health 设计为检查 db 连接，等用到 postgres 时再升级）
+
+验证结果：`bash scripts/build.sh` 通过（frontend 27 modules 构建成功，backend go build 无错误）。
+
+SPA fallback（刷新不 404）由 nginx `try_files` 配置保证，部署后需在服务器验证 `/about` 直接访问。
+
 ## MVP 验收与具体任务执行
 
 ### 写好基本的代码 
@@ -185,6 +201,37 @@ blog/
 如果两个都有了那就开始搞docker了，这个我不太懂，nginx/前端 后端 postgres 3个对吧，要compose好，然后现在先不追求https，以及疑问是第一次肯定是安装镜像部署，那之后呢？前端更新，nginx/前端镜像新部署那https申请岂不是会重复？postgres这个问题还不大，因为还涉及不到。
 
 最后我要的目标是访问 http://sleeponthegrass.com 成功显示 hello world 界面
+
+结果：
+
+```
+curl -I http://sleeponthegrass.com
+HTTP/1.1 200 OK
+Content-Length: 458
+Accept-Ranges: bytes
+Connection: keep-alive
+Content-Type: text/html
+Date: Mon, 17 Aug 2026 03:53:01 GMT
+Etag: "6a8284ca-1ca"
+Keep-Alive: timeout=4
+Last-Modified: Mon, 17 Aug 2026 03:49:30 GMT
+Proxy-Connection: keep-alive
+Server: nginx/1.27.5
+
+docker compose ps                                                                                                                                                   
+NAME             IMAGE                COMMAND                  SERVICE   CREATED         STATUS         PORTS                                                                              
+blog-backend-1   blog-backend         "/blog-backend"          backend   2 minutes ago   Up 2 minutes   6713/tcp                                                                           
+blog-db-1        postgres:16-alpine   "docker-entrypoint.s…"   db        2 minutes ago   Up 2 minutes   5432/tcp                                                                           
+blog-nginx-1     blog-nginx           "/docker-entrypoint.…"   nginx     2 minutes ago   Up 2 minutes   0.0.0.0:80->80/tcp, [::]:80->80/tcp 
+```
+
+访问前端页面成功展示
+
+### 确认开发流程顺畅
+
+我删除前端界面的 index.css，现在只有简单的hello wolrd
+
+然后前端新加入 /pages/About.tsx 让我访问 /about 的时候可以有简单的界面，而且刷新不会有异常，后端加入一个 /api/health 确保后端也能正常加入端口
 
 - [ ] https://sleeponthegrass.com/about 显示 about 页面
 - [ ] 直接访问 /about 刷新不 404（SPA fallback 生效）
