@@ -22,12 +22,15 @@ status: todo # done | todo
 
 ### 2026-08-17 实现 https（certbot + nginx 轮询切换）
 
+> 背景：首次部署时 https 失败，根因是 **www.sleeponthegrass.com 的 DNS 记录不存在**（nslookup 实测 NXDOMAIN），Let's Encrypt 无法验证 www 域名，连续失败 5 次触发 rate limit（封 1 小时到 11:27 UTC）。
+> 教训：certbot 申请失败立即退出 → docker 快速重启 → 反复失败刷爆 rate limit 窗口。已改为失败后每 15 分钟重试（任意 1 小时窗口最多 4 次失败，不触发 5 次上限）。
+
 新增文件：
 - `certbot/Dockerfile`：基于官方 certbot/certbot 镜像，覆盖 entrypoint
 - `certbot/entrypoint.sh`：
   1. 校验 CERTBOT_EMAIL 是否配置
   2. 等待 nginx 就绪（最多 60s，探测 /.well-known/acme-challenge/ 返回 200/404 即认为 nginx 在响应）
-  3. 证书目录不存在时 `certbot certonly --webroot` 一次性申请两个域名
+  3. 证书不存在时 `certbot certonly --webroot` 一次性申请两个域名；**失败不退出**，每 15 分钟重试（防刷爆 rate limit），成功后才进入续期循环
   4. 循环每 12h `certbot renew --quiet`
 - `nginx/templates/default.conf.http`：无证书阶段的 80 配置 = 现状 + `/.well-known/acme-challenge/` 指向 /var/www/certbot
 - `nginx/templates/default.conf.https`：有证书阶段；80 仅保留 acme-challenge + 其余 301 到 https；443 挂 ssl 证书、TLSv1.2/1.3、http2、静态托管、/api 反代
