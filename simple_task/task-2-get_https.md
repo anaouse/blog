@@ -1,6 +1,6 @@
 ---
 created_at: 2026-08-17T18:20:32+08:00
-status: todo # done | todo
+status: done # done | todo
 ---
 
 > 人下达task，你执行task并记录执行过程，人验收后记录验收看到的东西判断是否完成，你继续执行task，直到人认为结束了再手动修改status
@@ -54,3 +54,7 @@ status: todo # done | todo
 2. 首次部署：nginx 先以 http 启动 → certbot 申请证书（约几十秒）→ nginx 约 1 分钟内轮询到证书自动切 https
 3. 验证 `curl -I https://sleeponthegrass.com` 返回 200，`http://` 301 到 https，`/about` 正常，`/api/health` 正常
 4. 之后可验证：改前端代码重新 deploy，证书不重新申请（certbot 容器日志无 certonly，nginx 直接 https）
+
+# 验证
+
+验证成功，现在 `https://sleeponthegrass.com` 成功展示出页面
