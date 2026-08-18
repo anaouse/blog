@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import axios from 'axios'
 import Header from '../components/Header'
-import ArticlesList from '../components/ArticlesList'
-import type { ArticleMeta } from '../types'
+import Article from '../components/Article'
+import type { ArticleData } from '../types'
 
 type Status = 'loading' | 'error' | 'done'
 
-function Home() {
-  const [articles, setArticles] = useState<ArticleMeta[]>([])
+function ArticlePage() {
+  const { slug } = useParams<{ slug: string }>()
+  const [article, setArticle] = useState<ArticleData | null>(null)
   const [status, setStatus] = useState<Status>('loading')
 
   useEffect(() => {
     let cancelled = false
+    setStatus('loading')
     axios
-      .get<ArticleMeta[]>('/api/article_metainfo')
+      .get<ArticleData>(`/api/articles/${slug}`)
       .then((res) => {
         if (cancelled) return
-        setArticles(res.data)
+        setArticle(res.data)
         setStatus('done')
       })
       .catch(() => {
@@ -26,17 +29,17 @@ function Home() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [slug])
 
   return (
-    <div className="home">
+    <div className="article-page">
       <Header />
-      {status === 'done' ? (
-        <main className="home-main">
-          <ArticlesList articles={articles} />
+      {status === 'done' && article ? (
+        <main className="article-page-main">
+          <Article article={article} />
         </main>
       ) : (
-        <main className="home-status">
+        <main className="article-page-status">
           {status === 'loading' ? 'loading…' : '加载失败'}
         </main>
       )}
@@ -44,4 +47,4 @@ function Home() {
   )
 }
 
-export default Home
+export default ArticlePage

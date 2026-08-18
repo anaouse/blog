@@ -1,10 +1,10 @@
-.home {
+.article-page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-.home-status {
+.article-page-status {
   flex: 1;
   display: flex;
   align-items: center;
@@ -12,10 +12,7 @@
   color: #666;
 }
 
-.home-main {
+.article-page-main {
   flex: 1;
-  width: 100%;
-  max-width: 42rem;
-  margin: 0 auto;
   padding: 2rem 1rem;
 }
