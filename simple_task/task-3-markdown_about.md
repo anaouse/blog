@@ -119,4 +119,11 @@ created_at: 2026-08-18T13:04:32+08:00
 - `AGENTS.md`：技术栈部分新增前端样式约定（组件/页面 css 同名小写开头、统一放 `/src/styles`、在 `main.tsx` 引用、保持极简黑白色调）
 - `bash scripts/build.sh` 通过
 
+## 后续修改（agent，人确认方案后）
+
+- `docker-compose.yml`：backend 增加 `volumes: - ./backend/articles:/articles`（bind mount，scp 上传文章即生效，无需重建容器）
+- `backend/Dockerfile`：移除 `COPY --from=build /app/articles /articles`（由 bind mount 取代）
+- 后端 Go 代码不变（每次请求实时读文件，无缓存）
+- 一次性操作：服务器 `docker compose up -d` 重建 backend 应用新配置；之后只更新文章用 scp 传到 `backend/articles/` 即可
+
 About界面成功展示，基本任务完成

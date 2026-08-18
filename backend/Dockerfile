@@ -15,6 +15,5 @@ FROM alpine:3.20
 RUN adduser -D -u 10001 appuser
 USER appuser
 COPY --from=build /blog-backend /blog-backend
-COPY --from=build /app/articles /articles
 EXPOSE 6713
 ENTRYPOINT ["/blog-backend"]

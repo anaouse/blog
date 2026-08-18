@@ -40,6 +40,8 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+    volumes:
+      - ./backend/articles:/articles
     # 不映射端口到宿主机，仅容器网络内由 nginx 反代访问
 
   db:

@@ -12,7 +12,7 @@
 ## 技术栈（稳定部分）
 
 - 前端：vite + react + typescript + react-compiler(所以不用写 useMemo 和 useCallback)，包管理用 pnpm（固定 `pnpm@11.18.0`，见 frontend 的 `packageManager` 字段）。
-  - 前端样式约定：每个组件或页面需要写 css 时，单独创建同名小写开头的 css（如 `header.css`）；组件和页面的 css 统一放在 `/src/styles` 下，并在 `main.tsx` 中引用。保持极简，目前只做黑白色调。
+  - 前端样式约定：每个组件或页面需要写 css 时，单独创建同名小写开头的 css（如 `header.css`）；组件和页面的 css 统一放在 `/src/styles` 下，并在 `main.tsx` 中引用，通用数据结构放到 `types.ts` 当中。保持极简，目前只做黑白色调。
 - 后端：gin + postgres。
 - 部署：docker compose，共 3 个服务 nginx / backend / db；nginx 镜像内多阶段构建前端 dist 并托管，`/api/*` 反代到 backend。
 - 后端端口为 `6713`，反代目标为 `backend:6713`。
