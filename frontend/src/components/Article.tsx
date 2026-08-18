@@ -3,12 +3,7 @@ import remarkMath from 'remark-math'
 import remarkGfm from 'remark-gfm'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
-
-export interface ArticleData {
-  title: string
-  created_at: string
-  content: string
-}
+import type { ArticleData } from '../types'
 
 function formatDate(iso: string): string {
   // "2026-08-18T13:13:08+08:00" -> "2026-08-18 13:13:08"

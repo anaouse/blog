@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import Header from '../components/Header'
-import Article, { type ArticleData } from '../components/Article'
+import Article from '../components/Article'
+import type { ArticleData } from '../types'
 
 type Status = 'loading' | 'error' | 'done'
 

@@ -1,6 +1,6 @@
 ---
 created_at: 2026-08-18T12:44:05+08:00
-status: todo # done | todo
+status: done # done | todo
 ---
 
 > 人下达task，你执行task并记录执行过程，人验收后记录验收看到的东西判断是否完成，你继续执行task，直到人认为结束了再手动修改status
@@ -112,3 +112,11 @@ created_at: 2026-08-18T13:04:32+08:00
 - `bash scripts/build.sh` 通过：frontend（tsc + vite build）与 backend（go build）均 OK
 - 本地未运行服务，部署与线上验证由人负责：push 后服务器 `git pull && ./scripts/deploy.sh`
 - 线上验证建议：`curl https://sleeponthegrass.com/api/articles/about` 应返回 JSON；浏览器访问 `/` 和 `/about` 查看 header、文章展示
+
+## 后续修改（agent，人已验证线上 OK 后）
+
+- 新增 `frontend/src/types.ts`：通用数据类型 `ArticleData` 移到该文件，`Article.tsx` / `About.tsx` 改为从 `../types` 引用
+- `AGENTS.md`：技术栈部分新增前端样式约定（组件/页面 css 同名小写开头、统一放 `/src/styles`、在 `main.tsx` 引用、保持极简黑白色调）
+- `bash scripts/build.sh` 通过
+
+About界面成功展示，基本任务完成
