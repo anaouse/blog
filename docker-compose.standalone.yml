@@ -1,0 +1,7 @@
+# 独立模式：nginx 直接占用宿主 80/443，项目 certbot 自行申请/续期证书并终结 TLS。
+# 用法：./scripts/deploy.sh standalone（或 ./scripts/deploy.sh）
+services:
+  nginx:
+    ports:
+      - "80:80"
+      - "443:443"

@@ -1,11 +1,11 @@
+# 公共配置：nginx 的端口映射按部署模式拆分到独立文件，避免互相干扰。
+#   ./scripts/deploy.sh standalone（默认）→ docker-compose.standalone.yml（占用宿主 80/443）
+#   ./scripts/deploy.sh coexist        → docker-compose.coexist.yml（只监听 127.0.0.1:COEXIST_HTTP_PORT）
 services:
   nginx:
     build:
       context: .
       dockerfile: nginx/Dockerfile
-    ports:
-      - "80:80"
-      - "443:443"
     volumes:
       # 证书与 acme-challenge 存独立 volume，重建 nginx 镜像不影响证书
       - certbot-etc:/etc/letsencrypt:ro

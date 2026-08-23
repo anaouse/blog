@@ -1,0 +1,13 @@
+# 共存模式：与服务器已有 nginx 共用 80/443。
+# 项目 nginx 只监听 127.0.0.1:COEXIST_HTTP_PORT（纯 http），TLS 由外部 nginx 终结并反代到该端口；
+# 证书由外部 acme.sh/certbot 管理，本项目不申请（certbot 服务不启动）。
+# 用法：./scripts/deploy.sh coexist
+services:
+  nginx:
+    ports:
+      - "127.0.0.1:${COEXIST_HTTP_PORT}:80"
+    environment:
+      - NGINX_MODE=coexist
+
+  certbot:
+    scale: 0

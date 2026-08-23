@@ -7,6 +7,14 @@ CERT_DIR="/etc/letsencrypt/live/sleeponthegrass.com"
 SRC_DIR="/etc/nginx/sites"
 DEST="/etc/nginx/conf.d/default.conf"
 
+# 共存模式：TLS 由外部 nginx 终结并反代到本容器，本项目不申请证书。
+# 必须固定 http 模板，否则外部 nginx 反代过来会遇到 301 https 死循环。
+if [ "$NGINX_MODE" = "coexist" ]; then
+  cp "$SRC_DIR/default.conf.http" "$DEST"
+  echo "nginx: coexist 模式，固定 http 配置（TLS 由外部 nginx 终结）"
+  exec nginx -g "daemon off;"
+fi
+
 # 证书指纹：文件不存在则为空字符串
 cert_md5() {
   if [ -f "$CERT_DIR/fullchain.pem" ]; then

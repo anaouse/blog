@@ -1,6 +1,6 @@
 ---
 created_at: 2026-08-18T14:04:15+08:00
-status: todo # done | todo
+status: done # done | todo
 ---
 
 > 人下达task，你执行task并记录执行过程，人验收后记录验收看到的东西判断是否完成，你继续执行task，直到人认为结束了再手动修改status
@@ -58,3 +58,8 @@ pages/Home 不显示 Hello 了，而是 axios 获取数据后展示 ArticlesList
   - 浏览器访问 `/` 应看到文章列表（含 About），点击标题进入 `/article/:slug` 展示文章
   - 服务器上往 `backend/articles/` 新增/删除/修改 md 后，刷新首页列表应自动更新（fsnotify）
 
+# 验证
+
+基本没问题，上传新文章后刷新就可以看到，然后现在的markdown基本达到预期，就是图片还没有测试，现在文章不使用git管理，而是自己用别的方式上传，避免冲突
+
+`cd /d/projects/blog && tar czf - backend/articles/ | ssh my_server "tar xzf - -C /home/blog/"` 使用 tar 上传，rsync 有bug，但是这个问题就是无法删除服务器的文件

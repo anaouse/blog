@@ -7,7 +7,7 @@
 - 开发环境是 **Windows**，部署目标是 **Debian 云服务器**。
 - **本地只负责让代码编译通过，不运行服务**。编译检查命令统一走 `bash scripts/build.sh`（frontend 执行 `pnpm build` 含 TS 类型检查，backend 执行 `go build ./...`）。
 - 本地没有 Docker，也不运行前后端服务，不要尝试在本地启动容器或服务。
-- **部署与线上验证由人负责**：代码提交并 push 到 GitHub 后，由人在服务器上 `git pull` 并执行 `./scripts/deploy.sh` 完成更新与测试。agent 不负责部署，也不要求 agent 在服务器上验证。
+- **部署与线上验证由人负责**：代码提交并 push 到 GitHub 后，由人在服务器上执行 `./scripts/deploy.sh` 完成更新与测试。agent 不负责部署，也不要求 agent 在服务器上验证。
 
 ## 技术栈（稳定部分）
 
