@@ -34,6 +34,14 @@ fi
 
 check_port_free() {
   local port="$1"
+
+  # 端口由 docker 容器发布时放行：docker compose up 会重建容器并接管端口
+  # （直接用 docker 查询，不依赖 ss 需 root 才能识别进程名）
+  if docker ps --format '{{.Names}}' --filter "publish=$port" 2>/dev/null | grep -q .; then
+    echo "  端口 $port 由 docker 容器发布，将由 docker compose 接管，继续"
+    return 0
+  fi
+
   local out
   if command -v ss >/dev/null 2>&1; then
     out="$(ss -tlnp 2>/dev/null | grep -E "[:.]${port}[[:space:]]")" || return 0
@@ -44,11 +52,7 @@ check_port_free() {
     return 0
   fi
 
-  # 由 docker 容器（docker-proxy）占用时放行：docker compose up 会重建容器并接管端口
-  if echo "$out" | grep -q "docker-proxy"; then
-    echo "  端口 $port 由 docker 容器占用（docker-proxy），将由 docker compose 接管，继续"
-    return 0
-  fi
+  echo "错误：端口 $port 已被其他进程占用，请先释放后再运行"
   return 1
 }
 
@@ -68,8 +72,6 @@ if [ "$MODE" = "standalone" ]; then
     if check_port_free "$p"; then
       echo "  端口 $p 未被占用"
     else
-      echo "错误：端口 $p 已被其他进程占用，请先释放后再运行"
-      echo "      提示：若该端口是本项目的 docker 容器占用，请用 root 运行本脚本（ss 需 root 才能识别进程）"
       exit 1
     fi
   done
@@ -93,7 +95,7 @@ else
   if check_port_free "$COEXIST_PORT"; then
     echo "  端口 $COEXIST_PORT 未被占用"
   else
-    echo "错误：端口 $COEXIST_PORT 已被其他进程占用，请在 .env 中换一个 COEXIST_HTTP_PORT"
+    echo "      提示：可在 .env 中换一个 COEXIST_HTTP_PORT 后重试"
     exit 1
   fi
 fi
