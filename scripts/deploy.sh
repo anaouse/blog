@@ -35,11 +35,18 @@ fi
 check_port_free() {
   local port="$1"
 
-  # 端口由 docker 容器发布时放行：docker compose up 会重建容器并接管端口
-  # （直接用 docker 查询，不依赖 ss 需 root 才能识别进程名）
-  if docker ps --format '{{.Names}}' --filter "publish=$port" 2>/dev/null | grep -q .; then
-    echo "  端口 $port 由 docker 容器发布，将由 docker compose 接管，继续"
-    return 0
+  # 端口被 docker 容器占用时，判断是否属于本 compose 项目：是则放行（docker compose up 会重建并接管），
+  # 否则是其他 docker 项目占用了端口，不能放行。不依赖 ss 需 root 才能识别进程名。
+  # 注意：$COMPOSE_FILES 在函数调用前已赋值（check_port_free 只在 COMPOSE_FILES 赋值后被调用）。
+  local cid
+  cid="$(docker ps --format '{{.ID}}' --filter "publish=$port" 2>/dev/null | head -n1)"
+  if [ -n "$cid" ]; then
+    if docker compose $COMPOSE_FILES ps -q 2>/dev/null | grep -qx "$cid"; then
+      echo "  端口 $port 由本 compose 项目容器发布，将由 docker compose 接管，继续"
+      return 0
+    fi
+    echo "错误：端口 $port 已被其他 docker 容器占用（非本 compose 项目），请先释放后再运行"
+    return 1
   fi
 
   local out
