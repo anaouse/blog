@@ -38,10 +38,18 @@ check_port_free() {
   # 端口被 docker 容器占用时，判断是否属于本 compose 项目：是则放行（docker compose up 会重建并接管），
   # 否则是其他 docker 项目占用了端口，不能放行。不依赖 ss 需 root 才能识别进程名。
   # 注意：$COMPOSE_FILES 在函数调用前已赋值（check_port_free 只在 COMPOSE_FILES 赋值后被调用）。
-  local cid
-  cid="$(docker ps --format '{{.ID}}' --filter "publish=$port" 2>/dev/null | head -n1)"
+  local cid own
+  if ! cid="$(docker ps --format '{{.ID}}' --filter "publish=$port" 2>/dev/null | head -n1)"; then
+    echo "错误：无法访问 docker daemon，请确认当前用户有 docker 权限（加入 docker 组后需重新登录，或用 sudo/root 执行）"
+    return 1
+  fi
   if [ -n "$cid" ]; then
-    if docker compose $COMPOSE_FILES ps -q 2>/dev/null | grep -qx "$cid"; then
+    if ! own="$(docker compose $COMPOSE_FILES ps -q 2>/dev/null)"; then
+      echo "错误：docker compose ps 执行失败，请检查 compose 文件与 .env 配置"
+      return 1
+    fi
+    # docker ps 给的是短 ID，docker compose ps -q 给的是完整 ID，按前缀匹配（短 ID 唯一，不会误配）
+    if printf '%s\n' "$own" | grep -q "^${cid}"; then
       echo "  端口 $port 由本 compose 项目容器发布，将由 docker compose 接管，继续"
       return 0
     fi
